@@ -1,0 +1,46 @@
+{
+  "name": "rest-throttler",
+  "version": "0.0.2",
+  "description": "Request throttling interceptor for rest.js",
+  "keywords": [
+    "rest.js",
+    "throttling",
+    "rate-limiting"
+  ],
+  "bugs": {
+    "url": "https://bitbucket.org/alex_probchansky/rest-throttler/issues",
+    "email": "bugs@piratesorium.ru"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Alex Probchansky",
+    "email": "opensource@piratesorium.ru"
+  },
+  "maintainers": [
+    {
+      "name": "Alex Probchansky",
+      "email": "opensource@piratesorium.ru"
+    }
+  ],
+  "files": [
+    "lib"
+  ],
+  "main": "./lib/rest-throttler.js",
+  "repository": {
+    "type": "hg",
+    "url": "https://bitbucket.org/alex_probchansky/rest-throttler"
+  },
+  "dependencies": {
+    "rest": "1.x",
+    "when": "3.x"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "readme": "rest-throttler.js\n=================\n\nInterceptor for rate-limiting requests done via rest.js-compatible clients.\n\nUsage\n-----\nUsing this interceptor is pretty straightforward. See below.\n\n### Basic example ###\n```javascript\nvar rest = require('rest');\nvar throttler = require('rest-throttler');\n\nvar slowClient = rest.chain(throttler, 1000); // 1 request per 1000 ms\n\nslowClient('/foo').tap(console.log);\nslowClient('/bar').tap(console.log);\nslowClient('/buzz').tap(console.log);\nslowClient('/quux').tap(console.log);\n```\n\nIn this example, four requests will be performed sequentially, one after another, with 1000 msec delay between.\n\n### Multiple throttlers ###\nYou can also create multiple unrelated throttlers:\n\n```javascript\nvar rest = require('rest');\nvar throttler = require('rest-throttler');\n\nvar slowClient = rest.chain(throttler, 1000);\nvar verySlowClient = rest.chain(throttler, 2000);\n\nslowClient('/foo').tap(console.log);\nverySlowClient('/bar').tap(console.log);\nslowClient('/buzz').tap(console.log);\n```\n\nIn this example `slowClient` and `verySlowClient` have unrelated throttlers, so they are executed in parallel to each other, but still remain sequential within their local queues.\n\n### Multiple clients ###\nYou can share single throttler between several clients:\n\n```javascript\nvar rest = require('rest');\nvar throttler = require('rest-throttler');\n\nvar limit = throttler.limit(1000);\n\nvar muchSlowClient = rest.chain(throttler, limit);\nvar verySlackClient = rest.chain(throttler, limit);\n\nmuchSlowClient('/foo').tap(console.log);\nverySlackClient('/bar').tap(console.log);\nmuchSlowClient('/buzz').tap(console.log);\nverySlackClient('/quux').tap(console.log);\n```\n\nThese two clients share same limit object, so they belong to single queue and won't be handled in parallel.\n\n### Altering behavior ###\nBy default, interceptor ensures time delta between the last response and next request is no less than specified delay, so if you talk to slow server, you may wait somewhat longer than expected.\n\nIf you are not happy with this, you can tell throttler to only account interval between sending requests, disregarding when and if response arrives:\n```javascript\nvar rest = require('rest');\nvar throttler = require('rest-throttler');\n\nvar slowClient = rest.chain(throttler, { limit: 1000, async: true });\n\nslowClient('/foo').tap(console.log);\n```\n\n`limit` property accepts either explicit limit object, or delay number to create limit object automatically. Absent `limit` property disables throttling completely.\n\n### Dynamic reconfiguration ###\nYou can override settings for specific request by assigning configuration hash object to `request.throttler` property.\n\nFollowing example will uniformly distribute requests between two throttlers, without altering client itself:\n```javascript\nvar rest = require('rest');\nvar throttler = require('rest-throttler');\n\nvar varyingClient = rest.chain(throttler);\n\nvar slowLimit = throttler.limit(1000);\nvar fastLimit = throttler.limit(250);\n\nfor (var i = 0; i < 10; i++) {\n\tvaryingClient({\n\t\tpath: 'http://httpbin.org/get?seq=' + i,\n\t\tthrottler: {\n\t\t\tasync: false,\n\t\t\tlimit: (Math.random() < 0.5) ? slowLimit : fastLimit\n\t\t},\n\t\tseq: i\n\t}).tap(function(response) {\n\t\tvar request = response.request;\n\t\tvar delay = request.throttler.limit.delay;\n\t\tvar prefix = '';\n\t\t\n\t\tif (delay === 1000) {\n\t\t\tprefix = '\\t\\t\\t\\t';\n\t\t}\n\t\t\n\t\tconsole.log(prefix + 'Seq #' + request.seq + ' used delay ' + request.throttler.limit.delay);\n\t}).done();\n}\n```\n\nThis can be also changed from preceding interceptors, for example, to implement optional rate limiting depending on domain, or whatever.\n\n### Using as promise ###\n`limit` object is actually promise factory. You can use it as follows:\n\n```javascript\nvar limit = require('rest-throttler').limit;\n\nvar queue = limit(3000);\nqueue().tap(function() { console.log('This will show up immediately.'); });\nqueue().tap(function() { console.log('This will be delayed by 3 seconds.'); });\nqueue().tap(function() { console.log('All these remain sequential.'); });\n```\n\nInvoking `limit(delay)` returns function returning promise, that will resolve `delay` msec after last promise from same throttler had resolved.\n\nIt does not work!\n-----------------\nYou are doing it wrong. Please make sure you either share **same `limit` object** between client instances you want to belong to same rate limiting queue.\n\nCopyright\n---------\nrest-throttler.js is made available under the terms of MIT license. See LICENSE for details.\n",
+  "readmeFilename": "README.md",
+  "_id": "rest-throttler@0.0.2",
+  "_shasum": "abc55fca34042061b4bc6744d534f5b5c9901cbc",
+  "_from": "rest-throttler@",
+  "_resolved": "https://registry.npmjs.org/rest-throttler/-/rest-throttler-0.0.2.tgz"
+}
